@@ -1,7 +1,6 @@
 import os
 import warnings
 import sys
-from typing import Union
 import pandas as pd
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -14,7 +13,7 @@ import mlflow.sklearn
 import dagshub
 import logging
 
-
+dagshub.init(repo_owner='daunsid', repo_name='mlops', mlflow=True)
 logging.basicConfig(level=logging.WARN)
 logger = logging.getLogger(__name__)
 
@@ -79,8 +78,29 @@ if __name__ == "__main__":
 
         mlflow.log_param("alpha", alpha)
         mlflow.log_param("l1_ratio", l1_ratio)
-        mlflow.log_param("rmse", rmse)
-        mlflow.log_param("mae", mae)
-        mlflow.log_param("r2", r2)
+        mlflow.log_metric("rmse", rmse)
+        mlflow.log_metric("mae", mae)
+        mlflow.log_metric("r2", r2)
+
+        # For remote server only (Dagshub)
+        remote_server_uri = "https://dagshub.com/daunsid/mlops.mlflow"
+        mlflow.set_tracking_uri(remote_server_uri)
+
+        tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
+
+        # Model registry does not work with file store
+        if tracking_url_type_store != "file":
+            # Register the model
+            # There are other ways to use the Model Registry, which depends on the use case,
+            # Please refer to the doc for more information:
+            # https://mlflow.org/docs/latest/model-registry.html#api-workflow
+            mlflow.sklearn.log_model(
+                model, "model", registered_model_name="ElasticnetWineModel"
+            )
+        else:
+            mlflow.sklearn.log_model(model, "model")
+
+
+
 
 
